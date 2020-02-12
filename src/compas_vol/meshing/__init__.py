@@ -11,5 +11,6 @@ compas_vol.meshing
 
 """
 from .octree import *
+from .quadtree import *
 
 __all__ = [name for name in dir() if not name.startswith('_')]

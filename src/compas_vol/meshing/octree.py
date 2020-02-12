@@ -12,14 +12,20 @@ class Octree(object):
         self._ml = 4      # max levels
         self._rn = OctNode(0, 0, 0, self._ws, 0)
         self._o = None
+        self.leafs = []
     
     def divide(self, node):
+        d = self._o.get_distance(node._p)
+        node.distance = d
+        
         if node.level < self._ml:
-            d = self._o.get_distance(node.pos.x, node.pos.y, node.pos.z)
             if abs(d) < Octree.sq3 * node._el/2.0:
                 node.divide_node()
                 for b in node._branches:
                     self.divide(b)
+        else:
+            if abs(node.distance) < Octree.sq3 * node._el/2.0:
+                self.leafs.append(node)
 
 
 class OctNode(object):
@@ -28,6 +34,7 @@ class OctNode(object):
         self._el = e
         self._l = l
         self._branches = None
+        self.distance = 0.0
     
     @property
     def level(self):
