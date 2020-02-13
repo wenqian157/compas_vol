@@ -10,41 +10,45 @@ class Quadtree(object):
         self._p = Point(0, 0, 0)
         self._ws = 100.0  # world size
         self._ml = 4      # max levels
-        self._rn = QuadNode(0, 0, 0, self._ws, 0, 1)
+        self._rn = QuadNode(0, 0, 0, self._ws, 0, 1, 1)
         self._o = None
         self.leafs = []
     
     def divide(self, node):
         d = self._o.get_distance(node._p)
         node.distance = d
-        # node.switch_branches()
         
         if node.level < self._ml:            
             if abs(d) < Quadtree.sq2 * node._el/2.0:
                 node.divide_node()
-                node.switch_branches()
+                node.orient()
+      
                 for b in node._branches:
                     self.divide(b)
             else:
                 node.divide_node()
-                node.switch_branches()
+                node.orient()
+
                 self.leafs.append(node)
                     
         else:
             # if abs(node.distance) < Quadtree.sq2 * node._el/2.0:
             node.divide_node()
-            node.switch_branches()
+            node.orient()
+
             self.leafs.append(node)
 
 
 class QuadNode(object):
-    def __init__(self, x, y, z, e, l, branch_index):
+    def __init__(self, x, y, z, e, l, branch_index, orientation):
         self._p = Point(x, y, z)
         self._el = e
         self._l = l
         self._branches = None
         self.distance = 0.0
         self.branch_index = branch_index
+        self.orientation = orientation
+        self.direction = 0
     
     @property
     def level(self):
@@ -58,38 +62,68 @@ class QuadNode(object):
         self._branches = []
         qs = self._el/4.0
         nl = self.level + 1
-        self._branches.append(QuadNode(self._p.x-qs, self._p.y-qs, 0, qs*2, nl, 0))
-        self._branches.append(QuadNode(self._p.x-qs, self._p.y+qs, 0, qs*2, nl, 1))
-        self._branches.append(QuadNode(self._p.x+qs, self._p.y+qs, 0, qs*2, nl, 2))
-        self._branches.append(QuadNode(self._p.x+qs, self._p.y-qs, 0, qs*2, nl, 3))
+        self.orientation
+        self.branch_index
+        if self.orientation == 1 or self.orientation == 2:
+            orientation = self.branch_index
+        elif self.orientation == 0:
+            if self.branch_index == 0:
+                orientation = 4
+            elif self.branch_index == 1 or self.branch_index == 2:
+                orientation = self.orientation
+            elif self.branch_index == 3:
+                orientation = 1
+        elif self.orientation == 3:
+            if self.branch_index == 0:
+                orientation = 1
+            elif self.branch_index == 1 or self.branch_index == 2:
+                orientation = self.orientation
+            elif self.branch_index == 3:
+                orientation = 4
 
-    def switch_branches(self):
+        # orientation = self.branch_index
+        self._branches.append(QuadNode(self._p.x-qs, self._p.y-qs, 0, qs*2, nl, 0, orientation))
+        self._branches.append(QuadNode(self._p.x-qs, self._p.y+qs, 0, qs*2, nl, 1, orientation))
+        self._branches.append(QuadNode(self._p.x+qs, self._p.y+qs, 0, qs*2, nl, 2, orientation))
+        self._branches.append(QuadNode(self._p.x+qs, self._p.y-qs, 0, qs*2, nl, 3, orientation))
+
+    def shift_branches(self, n):
+        if n == 1:
+            self._branches = self._branches[1:] + [self._branches[0]]
+        elif n == -1:
+            self._branches = [self._branches[-1]] + self._branches[:-1]
+
+        for i, branch in enumerate(self._branches):
+                branch.branch_index = i
+
+    def reverse_branches(self):
+        self._branches = self._branches[::-1]
+    
+    def orient(self):
+        if self.orientation == 0:
+            self.shift_branches(1)
+            self.reverse_branches()
+            self.direction = -1
+        elif self.orientation == 3:
+            self.shift_branches(-1)
+            self.reverse_branches()
+            self.direction = -1
+
         if self.branch_index == 0:
-            self._branches[0].branch_index = 3
-            self._branches[1].branch_index = 0
-            self._branches[2].branch_index = 1
-            self._branches[3].branch_index = 2
+            if self.direction == -1:
+                self.reverse_branches()
+                self.shift_branches(1)
+            else:
+                self.shift_branches(1)
+                self.reverse_branches()
 
-            self._branches = [
-                self._branches[0],
-                self._branches[3],
-                self._branches[2],
-                self._branches[1]
-            ]
-            
         elif self.branch_index == 3:
-            self._branches[0].branch_index = 1
-            self._branches[1].branch_index = 2
-            self._branches[2].branch_index = 3
-            self._branches[3].branch_index = 0
-
-            self._branches = [
-                self._branches[2],
-                self._branches[1],
-                self._branches[0],
-                self._branches[3]
-            ]
-            
+            if self.direction == -1:
+                self.reverse_branches()
+                self.shift_branches(-1)
+            else:
+                self.shift_branches(-1)
+                self.reverse_branches()
 
 
 # ==============================================================================
