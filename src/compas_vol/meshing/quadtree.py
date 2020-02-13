@@ -21,21 +21,16 @@ class Quadtree(object):
         if node.level < self._ml:            
             if abs(d) < Quadtree.sq2 * node._el/2.0:
                 node.divide_node()
-                # node.orient()
       
                 for b in node._branches:
                     self.divide(b)
             else:
                 node.divide_node()
-                # node.orient()
-
                 self.leafs.append(node)
                     
         else:
             # if abs(node.distance) < Quadtree.sq2 * node._el/2.0:
             node.divide_node()
-            # node.orient()
-
             self.leafs.append(node)
 
 
@@ -48,7 +43,6 @@ class QuadNode(object):
         self.distance = 0.0
         self.branch_index = branch_index
         self.orientation = orientation
-        self.direction = 0
     
     @property
     def level(self):
@@ -68,30 +62,37 @@ class QuadNode(object):
             self._branches.append(QuadNode(self._p.x-qs, self._p.y+qs, 0, qs*2, nl, 1, self.orientation%4))
             self._branches.append(QuadNode(self._p.x+qs, self._p.y+qs, 0, qs*2, nl, 2, self.orientation%4))
             self._branches.append(QuadNode(self._p.x+qs, self._p.y-qs, 0, qs*2, nl, 3, (self.orientation+1)%4))
-        elif self.orientation == 0:
-            self._branches.append(QuadNode(self._p.x-qs, self._p.y-qs, 0, qs*2, nl, 0, (self.orientation-1)%4))
-            self._branches.append(QuadNode(self._p.x+qs, self._p.y-qs, 0, qs*2, nl, 3, self.orientation%4))         
-            self._branches.append(QuadNode(self._p.x+qs, self._p.y+qs, 0, qs*2, nl, 2, self.orientation%4))
-            self._branches.append(QuadNode(self._p.x-qs, self._p.y+qs, 0, qs*2, nl, 1, (self.orientation+1)%4))      
-        elif self.orientation == 2:
-            self._branches.append(QuadNode(self._p.x+qs, self._p.y+qs, 0, qs*2, nl, 2, (self.orientation-1)%4))
-            self._branches.append(QuadNode(self._p.x-qs, self._p.y+qs, 0, qs*2, nl, 1, self.orientation%4))
-            self._branches.append(QuadNode(self._p.x-qs, self._p.y-qs, 0, qs*2, nl, 0, self.orientation%4))
-            self._branches.append(QuadNode(self._p.x+qs, self._p.y-qs, 0, qs*2, nl, 3, (self.orientation+1)%4))                     
-        elif self.orientation == 3:
-            self._branches.append(QuadNode(self._p.x-qs, self._p.y+qs, 0, qs*2, nl, 1, (self.orientation-1)%4))
-            self._branches.append(QuadNode(self._p.x-qs, self._p.y-qs, 0, qs*2, nl, 0, self.orientation%4))
-            self._branches.append(QuadNode(self._p.x+qs, self._p.y-qs, 0, qs*2, nl, 3, self.orientation%4))
-            self._branches.append(QuadNode(self._p.x+qs, self._p.y+qs, 0, qs*2, nl, 2, (self.orientation+1)%4))
-            
 
+        elif self.orientation == 0:
+            self._branches.append(QuadNode(self._p.x-qs, self._p.y-qs, 0, qs*2, nl, 0, (self.orientation+1)%4))
+            self._branches.append(QuadNode(self._p.x+qs, self._p.y-qs, 0, qs*2, nl, 3, self.orientation%4))
+            self._branches.append(QuadNode(self._p.x+qs, self._p.y+qs, 0, qs*2, nl, 2, self.orientation%4))
+            self._branches.append(QuadNode(self._p.x-qs, self._p.y+qs, 0, qs*2, nl, 1, (self.orientation-1)%4))
+
+        elif self.orientation == 2:
+            self._branches.append(QuadNode(self._p.x+qs, self._p.y+qs, 0, qs*2, nl, 2, (self.orientation+1)%4))
+            self._branches.append(QuadNode(self._p.x-qs, self._p.y+qs, 0, qs*2, nl, 1, self.orientation%4))
+            self._branches.append(QuadNode(self._p.x-qs, self._p.y-qs, 0, qs*2, nl, 0, self.orientation%4))           
+            self._branches.append(QuadNode(self._p.x+qs, self._p.y-qs, 0, qs*2, nl, 3, (self.orientation-1)%4))
+
+        elif self.orientation == 3:
+            self._branches.append(QuadNode(self._p.x+qs, self._p.y+qs, 0, qs*2, nl, 2, (self.orientation-1)%4))
+            self._branches.append(QuadNode(self._p.x+qs, self._p.y-qs, 0, qs*2, nl, 3, self.orientation%4))
+            self._branches.append(QuadNode(self._p.x-qs, self._p.y-qs, 0, qs*2, nl, 0, self.orientation%4))
+            self._branches.append(QuadNode(self._p.x-qs, self._p.y+qs, 0, qs*2, nl, 1, (self.orientation+1)%4))
+            
     def shift_branches(self, n):
         self._branches = self._branches[n:] + self._branches[:n]
         for i, branch in enumerate(self._branches):
-                branch.branch_index = i
+            branch.branch_index = i
+        self._branches[0].orientation = (self._branches.orientation-1)%4
+        self._branches[1].orientation = self._branches.orientation
+        self._branches[2].orientation = self._branches.orientation
+        self._branches[3].orientation = (self._branches.orientation+1)%4
 
     def reverse_branches(self):
         self._branches = self._branches[::-1]
+        self.direction = (self.direction + 1) % 2
     
     def orient(self):
         if self.orientation == 1:
@@ -104,33 +105,6 @@ class QuadNode(object):
             self.reverse_branches()
         elif self.orientation == 3:
             self.shift_branches(2)
-
-
-
-        # if self.orientation == 0:
-        #     self.shift_branches(1)
-        #     self.reverse_branches()
-        #     self.direction = -1
-        # elif self.orientation == 3:
-        #     self.shift_branches(-1)
-        #     self.reverse_branches()
-        #     self.direction = -1
-
-        # if self.branch_index == 0:
-        #     if self.direction == -1:
-        #         self.reverse_branches()
-        #         self.shift_branches(1)
-        #     else:
-        #         self.shift_branches(1)
-        #         self.reverse_branches()
-
-        # elif self.branch_index == 3:
-        #     if self.direction == -1:
-        #         self.reverse_branches()
-        #         self.shift_branches(-1)
-        #     else:
-        #         self.shift_branches(-1)
-        #         self.reverse_branches()
 
 
 # ==============================================================================
